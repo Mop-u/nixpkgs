@@ -25,7 +25,7 @@
 
 let
   desktopItem = makeDesktopItem {
-    name = "quartus-prime-lite";
+    name = "quartus-prime-${unwrapped.variant}";
     exec = "quartus";
     icon = "quartus";
     desktopName = "Quartus";
@@ -49,7 +49,7 @@ let
 in
 # I think questa_fse/linux/vlm checksums itself, so use FHSUserEnv instead of `patchelf`
 buildFHSEnv (finalAttrs: {
-  pname = "quartus-prime-lite"; # wrapped
+  pname = "quartus-prime-${unwrapped.variant}"; # wrapped
   inherit (unwrapped) version;
 
   targetPkgs =
@@ -135,7 +135,7 @@ buildFHSEnv (finalAttrs: {
       "${unwrapped}"/questa_fse/linux_x86_64/lmutil
     )
 
-    wrapper=$out/bin/quartus-prime-lite
+    wrapper=$out/bin/${finalAttrs.pname}
     progs_wrapped=()
     for prog in ''${progs_to_wrap[@]}; do
         relname="''${prog#"${unwrapped}/"}"
@@ -220,7 +220,7 @@ buildFHSEnv (finalAttrs: {
     inherit unwrapped;
     tests = {
       buildSof =
-        runCommand "quartus-prime-lite-test-build-sof"
+        runCommand "quartus-prime-${finalAttrs.passthru.unwrapped.variant}-test-build-sof"
           {
             nativeBuildInputs = [ finalAttrs.finalPackage ];
             env.NIXPKGS_QUARTUS_REPRODUCIBLE_BUILD = "1";
@@ -254,7 +254,7 @@ buildFHSEnv (finalAttrs: {
             sha1sum mydesign.sof > "$out"
           '';
       questaEncryptedModel =
-        runCommand "quartus-prime-lite-test-questa-encrypted-model"
+        runCommand "quartus-prime-${finalAttrs.passthru.unwrapped.variant}-test-questa-encrypted-model"
           {
             env.NIXPKGS_QUARTUS_REPRODUCIBLE_BUILD = "1";
           }

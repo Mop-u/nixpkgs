@@ -108,6 +108,7 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   passthru = {
+    variant = "lite";
     deviceIds = {
       "Arria II" = "arria_lite";
       "Cyclone V" = "cyclonev";

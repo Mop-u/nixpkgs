@@ -48,7 +48,12 @@ stdenv.mkDerivation (finalAttrs: {
       chmod u+w,+x $TEMP/${installer.name}
       patchelf --interpreter $(cat $NIX_CC/nix-support/dynamic-linker) $TEMP/${installer.name}
     ''))
-    (lib.concatStringsSep "\n")
+    (lib.concatLines)
+  ]
+  + lib.pipe finalAttrs.finalPackage.passthru.installerParts [
+    (lib.mapAttrsToList finalAttrs.finalPackage.passthru.download)
+    (map (installerPart: "ln -s ${installerPart} $TEMP/${installerPart.name}"))
+    (lib.concatLines)
   ]
   + (
     let
@@ -75,13 +80,10 @@ stdenv.mkDerivation (finalAttrs: {
       ))
       # See NOTE above `map` that iterates the installers.
       (map (component: "ln -s ${component} $TEMP/${component.name}"))
-      (lib.concatStringsSep "\n")
+      (lib.concatLines)
     ]
   )
-  # New line preceding the below bash commands is required for the `echo` below
-  # to be in its own line.
   + ''
-
     echo "executing installer..."
     # "Could not load seccomp program: Invalid argument" might occur if unstick
     # itself is compiled for x86_64 instead of the non-x86 host. In that case,
@@ -104,7 +106,9 @@ stdenv.mkDerivation (finalAttrs: {
 
     # replace /proc pentium check with a true statement. this allows usage under emulation.
     substituteInPlace $out/quartus/adm/qenv.sh \
-      --replace-fail 'grep sse /proc/cpuinfo > /dev/null 2>&1' ':'
+      --replace-fail 'grep ${
+        if finalAttrs.finalPackage.passthru.variant == "pro" then "sse4_2" else "sse"
+      } /proc/cpuinfo > /dev/null 2>&1' ':'
   '';
 
   passthru = {
@@ -133,6 +137,7 @@ stdenv.mkDerivation (finalAttrs: {
       "QuestaSetup-${finalAttrs.version}-linux.run" =
         "sha256-0F7psE+jTimCoy+UVJRgxNC6GEVdY/PJu49hf+D7T3U=";
     };
+    installerParts = { };
     mainInstaller = "QuartusLiteSetup-${finalAttrs.version}-linux.run";
     # Make it a bit easier to override the download URL schema.
     baseURL = "https://download.altera.com/akdlm/software/acdsinst";
